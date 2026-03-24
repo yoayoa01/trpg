@@ -1,7 +1,5 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import GoogleProvider from "next-auth/providers/google";
-import DiscordProvider from "next-auth/providers/discord";
 import argon2 from "argon2";
 import { prisma } from "./prisma";
 
@@ -43,16 +41,6 @@ export const authOptions: NextAuthOptions = {
         };
       },
     }),
-
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
-
-    DiscordProvider({
-      clientId: process.env.DISCORD_CLIENT_ID!,
-      clientSecret: process.env.DISCORD_CLIENT_SECRET!,
-    }),
   ],
 
   session: {
@@ -60,35 +48,10 @@ export const authOptions: NextAuthOptions = {
   },
 
   callbacks: {
-    async signIn({ user, account }) {
-      if (!account) return false;
-
-      if (account.provider === "google" || account.provider === "discord") {
-        const oauthUserId =
-          user.email ?? `${account.provider}:${account.providerAccountId}`;
-
-        await prisma.user.upsert({
-          where: {
-            userId: oauthUserId,
-          },
-          update: {},
-          create: {
-            userId: oauthUserId,
-            passwordHash: null,
-          },
-        });
-
-        user.name = oauthUserId;
-      }
-
-      return true;
-    },
-
     async jwt({ token, user }) {
       if (user) {
         token.name = user.name;
       }
-
       return token;
     },
 
